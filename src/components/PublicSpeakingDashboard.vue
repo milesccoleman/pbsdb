@@ -341,10 +341,10 @@ let predictedAges = [];
 
 Promise.all([
   faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
-  faceapi.nets.faceLandmark68Net.loadFromUri("./models/models"),
-  faceapi.nets.faceRecognitionNet.loadFromUri("./models/models"),
-  faceapi.nets.faceExpressionNet.loadFromUri("./models/models"),
-  faceapi.nets.ageGenderNet.loadFromUri("./models/models")
+  faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
+  faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
+  faceapi.nets.faceExpressionNet.loadFromUri("./models"),
+  faceapi.nets.ageGenderNet.loadFromUri("./models")
 ]).then(startVideo);
 
 function startVideo() {
