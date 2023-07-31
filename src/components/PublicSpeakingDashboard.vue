@@ -31,18 +31,12 @@
 		<!--<br><button id="next" v-if="!show" v-on:click="next">Next</button>--><br>
 		<span id="rawData"></span>
 		<button v-if="!showTime" class="title" id="timer">{{ time }}</button>
+		<span id="container"><div id="video-container" class="video-container"><video id="video" autoplay width="150" height="150"></video></div></span>
 		<span v-if="!show3" id="volume-visualizer-wrapper"><button id="volume-visualizer"></button></span>
 		<ul v-if="!show3" id="output"></ul>
 		<span><button v-if="!show3" id="dataShowButton" v-on:click="unhideData">View Raw Data</button><button v-if="!show3" id="dataHideButton" v-on:click="hideData">Hide Raw Data</button></span>
-<span class="container">
-    <span id="video-container" class="video-container">
-      <video id="video" autoplay width="500" height="500"></video>
-    </span>
-  </span>
 <div class="result-container">
 <div id="emotion">Emotion</div>
-<div id="gender">Gender</div>
-<div id="age">Age </div>
 </div>
 
 
@@ -1156,23 +1150,28 @@ background-color: #c300ff;
    background-color: #c300ff;
    transition: width 100ms linear;
 }
-.container {
-  justify-content: center;
-  flex-direction: column;
+#container {
+
+  height: 200px;
+  margin-top: 0px; 
   align-items: center;
-  height: 100vh;
-  text-align: center;
+  width: 80%;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  
 }
 
 .video-container {
   position: relative;
+  margin-top: 0px; 
+  background-color: #222831; 
+
 }
 
 canvas {
   position: absolute;
   left: 0;
   top: 0px; 
-  background: rgba('black', 0.5)
 }
 .result-container {
   width: 100%;
@@ -1198,6 +1197,7 @@ canvas {
 }
 video {
   width: 100%;
+  margin-bottom: -150px; 
 }
 
 #loading{
