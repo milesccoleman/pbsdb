@@ -1,6 +1,6 @@
 <template>
   <div id="body" class="dashboard">
-  <p v-if="!loading" id="loadingContainer">Initializing <img  id="loading" src="https://media.giphy.com/media/Ky5F5Rhn1WRVZmvE5W/giphy.gif"><br><span id="initialMessage">(Make sure your webcam is facing you.)</span></p>
+  <p v-if="!loading" id="loadingContainer">Initializing <br><img id="loading" src="https://media.giphy.com/media/Ky5F5Rhn1WRVZmvE5W/giphy.gif"><br><span id="initialMessage">(Make sure your webcam is facing you.)</span></p>
     <h1 id="mainTitle"> <img id="talking" alt="image of voice waves leaving someone's mouth. Attribution: Speak Icon, by Voysla, 'https://www.flaticon.com/free-icons/speak'" src="talking.png"> {{ msg }} </h1>
 		<p id="messageTwo">
 			{{ msg2 }} 
@@ -27,7 +27,7 @@
 				<option value="3600000">60 Min</option> 
 			</select>
 		</span>
-		<button id="begin" v-if="show3" v-on:click="begin(); selectWPM(); selectTextEmotion(); selectVoiceEmotion(); selectFaceEmotion()">Begin</button><button id="start"  v-if="!show3" v-on:click="initiateVoiceControl">Start</button><button id="stop" v-if="!show3" v-on:click="stopVoiceControl">Stop</button><button id="reset"  v-if="!show3" v-on:click="reset">Reset</button></span>
+		<button id="begin" v-if="show3" v-on:click="begin(); selectWPM(); selectTextEmotion(); selectVoiceEmotion(); selectFaceEmotion()">Begin</button><button id="start"  v-if="!show3" v-on:click="initiateVoiceControl">Start</button><button id="stop" v-if="!showStop" v-on:click="stopVoiceControl">Stop</button><button id="reset"  v-if="!show3" v-on:click="reset">Reset</button></span>
 		<!--<br><button id="next" v-if="!show" v-on:click="next">Next</button>--><br>
 		<span id="rawData"></span>
 		<button v-if="!showTime" class="title" id="timer">{{ time }}</button>
@@ -43,6 +43,7 @@
 		<!--WPM-->
 		<span v-if="!showWPM" id="wpmChart"></span>
 		<span v-if="!showVolume" id="volumeChart"></span>
+		<span v-if="!showFaceEmotion" id="faceEmotionChart"></span>
 		<span v-if="!showTextEmotion" id="textEmotionChart"></span>
 		<!--<p v-if="!showWPM" id="wpm">{{ wpm }} <br><b>Overall Average Words Per Minute</b></p><br>-->
   </div>
@@ -86,16 +87,16 @@ export default {
 			continuous: true, 
 			show: true, 
 			show2: true, 
-			show3: true, 
+			show3: true,
+			showStop: true,  
 			loading: true,
 			show4: true,
 			showWPM: true,
-			showTEXTEMOTION: true, 
+			showTextEmotion: true,
 			showTime: true,
 			showData: true,   
 			WPMSelected: false,
-			WPMColor: '#CBC3E3',  
-			showTextEmotion: true, 
+			WPMColor: '#CBC3E3',  			 
 			textEmotionSelected: false, 
 			textEmotionColor: '#CBC3E3', 
 			showVoiceEmotion: true, 
@@ -117,7 +118,14 @@ export default {
 			volumeNumber: 0, 
 			showVolume: true, 
 			faceEmotionState: '', 
-			analyzeFaceInterval: ''
+			analyzeFaceInterval: '', 
+			faceAngry: '',
+			faceDisgusted: '', 
+			faceFearful: '', 
+			faceHappy: '', 
+			faceNeutral: '',
+			faceSad: '', 
+			faceSurprised: ''
 		}
 	},
 	
@@ -274,7 +282,7 @@ export default {
 	
 		initiateVoiceControl: function () {
 		//start listening for words and making a transcript of detected words
-			console.log('voice recognition initiated')
+			console.log('Voice recognition initiated')
 			window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
 			let finalTranscript = '';
 			let recognition = new window.SpeechRecognition();
@@ -294,7 +302,7 @@ export default {
 						document.querySelector('ul').appendChild(node);
 						var elem = document.getElementById('output');
 						elem.scrollTop = elem.scrollHeight;
-						console.log(this.workingOutput)
+						console.log("Detected speech:" + this.workingOutput)
 						this.renderData()
 						
 					}
@@ -318,6 +326,7 @@ export default {
 						this.startVolumeMeter()
 						document.getElementById("container").style.display = "inline";
 						console.log("app started")
+						this.showStop = false
 					} 
 					if (this.stop == true) {
 						clearInterval(this.grabTimeInterval)
@@ -356,7 +365,7 @@ navigator.mediaDevices.getUserMedia(constraints)
 }
 
 video.addEventListener("playing", () => {
-  console.log("playing called");
+  console.log("Initializing face recognition");
   const canvas = faceapi.createCanvasFromMedia(video);
   
   canvas.willReadFrequently = true;
@@ -389,13 +398,19 @@ video.addEventListener("playing", () => {
       const emotion = Object.keys(expressions).filter(
         item => expressions[item] === maxValue
       );
-      this.faceEmotionState = `Emotion - ${emotion[0]}`
-      console.log(this.faceEmotionState)
-      if (this.loading == false) {
+      this.faceEmotionState = '"' + `${emotion[0]}` + '"'
+	if (this.loading == false) {
 		this.loading = true
       }
     }
-  }, 1000);
+    this.faceAngry = Math.round(detections.expressions.angry * 100)
+      this.faceDisgusted = Math.round(detections.expressions.disgusted * 100)
+      this.faceFearful = Math.round(detections.expressions.fearful * 100)
+      this.faceHappy = Math.round(detections.expressions.happy * 100)
+      this.faceNeutral = Math.round(detections.expressions.neutral * 100)
+      this.faceSad = Math.round(detections.expressions.sad * 100)
+      this.faceSurprised = Math.round(detections.expressions.surprised * 100)
+  }, 500);
 });
 
 
@@ -409,13 +424,11 @@ video.addEventListener("playing", () => {
 			this.dataNamer = this.timeDifference
 			var div = document.getElementById('timeHolder');
 			div.innerHTML = this.dataNamer
-			console.log(this.dataNamer)
 			}
 			
 			if (this.time1 == false){
 				this.timeDifference = Date.now() - this.initialTime;
 				var middleTime = parseInt(document.getElementById("timeHolder").innerHTML);
-				console.log(middleTime)
 				this.timeDifference = this.timeDifference + middleTime
 				this.time2 = true
 			}
@@ -479,7 +492,6 @@ video.addEventListener("playing", () => {
 				this.boredom = Math.round(obj.emotion.Bored * 100)
 				this.sadness = Math.round(obj.emotion.Sad * 100)
 				this.happiness = Math.round(obj.emotion.Happy * 100)
-				console.log("emotion data retrieved" + response)
 			})
 				.catch((error) => {
 				console.log(error);
@@ -496,7 +508,6 @@ video.addEventListener("playing", () => {
 				this.dataNamer = this.timeDifference
 				var div2 = document.getElementById('timeHolder');
 				div2.innerHTML = this.dataNamer 
-				console.log(this.dataNamer)
 			}
 			if(this.volumeInterval !== null) {
 				clearInterval(this.volumeInterval);
@@ -538,11 +549,10 @@ video.addEventListener("playing", () => {
 		}, 
 		
 		constructJSON: function() {
-						this.currentDataObject = '{"time":' + '"' + this.workingTime + '"' + "," + '"wpm":' + '"' + this.wpm + '"' + "," + '"content":' + '"' + this.workingOutput + '"' + "," + '"Angry":' + this.anger + "," + '"Fear":' + this.fear + "," + '"Excited":' + this.excitement + "," + '"Bored":' + this.boredom + "," + '"Sad":' + this.sadness + "," + '"Happy":' + this.happiness + "," + '"volume":' + this.volumeValue + "},"
+						this.currentDataObject = '{"time":' + '"' + this.workingTime + '"' + "," + '"wpm":' + '"' + this.wpm + '"' + "," + '"content":' + '"' + this.workingOutput + '"' + "," + '"Angry":' + this.anger + "," + '"Fear":' + this.fear + "," + '"Excited":' + this.excitement + "," + '"Bored":' + this.boredom + "," + '"Sad":' + this.sadness + "," + '"Happy":' + this.happiness + "," + '"volume":' + this.volumeValue + "," + '"faceAnger":' + this.faceAngry + "," + '"faceDisgust":' + this.faceDisgusted + "," + '"faceFear":' + this.faceFearful + "," + '"faceHappiness":' + this.faceHappy + "," + '"faceNeutral":' + this.faceNeutral + "," + '"faceSadness":' + this.faceSad + "," + '"faceSurprise":' + this.faceSurprised + "},"
 						var div = document.getElementById('rawData');
 						div.innerHTML += this.currentDataObject;
 						this.overallDataObject = document.getElementById("rawData").innerHTML
-						console.log(this.overallDataObject)
 		},  
 		
 		visualizeData: function () {
@@ -705,6 +715,147 @@ video.addEventListener("playing", () => {
 				Plotly.newPlot(volumeChart, [volume], layout3);
 			}
 			
+			//Emotions in Face
+			if (this.faceEmotionSelected == true) {
+				
+				let Angry = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Anger', 
+					line: {
+						color: '#ff6961',
+						width: 2
+					}
+				};
+				
+				let Fearful = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Fear', 
+					line: {
+						color: '#fdfd96',
+						width: 2
+					}
+				};
+				
+				let Excited = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Surprise', 
+					line: {
+						color: '#ffb347',
+						width: 2
+					}
+				};
+				
+				let Bored = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Neutral', 
+					line: {
+						color: '#cfcfc4',
+						width: 2
+					}
+				};
+				
+				let Sad = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Sadness', 
+					line: {
+						color: '#85A1F2',
+						width: 2
+					}
+				};
+				
+				let Happy = {
+					x: [],
+					y: [],
+					mode: "lines",
+					name: 'Happiness', 
+					line: {
+						color: '#77dd77',
+						width: 2
+					}
+				};
+
+				data.forEach(function(val) {
+				Angry.x.push(val["time"]);
+				Angry.y.push(val["faceAnger"]);
+				Fearful.x.push(val["time"]);
+				Fearful.y.push(val["faceFear"]);
+				Excited.x.push(val["time"]);
+				Excited.y.push(val["faceSurprise"]);
+				Bored.x.push(val["time"]);
+				Bored.y.push(val["faceNeutral"]);
+				Sad.x.push(val["time"]);
+				Sad.y.push(val["faceSadness"]);
+				Happy.x.push(val["time"]);
+				Happy.y.push(val["faceHappiness"]);
+				});
+				
+				var layout4 = {
+				paper_bgcolor: "#222831",
+				plot_bgcolor: "#222831",
+				title: {
+					text:'  Expressions in Face',
+					font: {
+					family: 'Arial, sans-serif',
+					size: 20, 
+					color: '#f48d79', 
+				},
+					xref: 'paper',
+					automargin: true,
+					x: 0.6,
+					xanchor: 'center', 
+					y: 0.88, 
+					yanchor: 'top'
+				},
+				autosize: true,
+					xaxis: {
+						tickfont : {
+							size : 16,
+							color : '#f48d79'
+						},
+						tickcolor: '#f48d79',
+						title: {
+							text: 'Time',
+							font: {
+							family: 'Arial, sans-serif',
+							size: 18,
+							color: '#f48d79',
+							}
+						},
+					},
+					yaxis: {
+						margin: {
+							autoexpand: true,
+						},
+						automargin: true,
+						tickfont : {
+							size : 16,
+							color : '#f48d79'
+						},
+						tickcolor: '#f48d79',
+						title: {
+						text: 'Expressions',
+							font: {
+							family: 'Arial, sans-serif',
+							size: 18,
+							color: '#f48d79' 
+							}
+						}
+					}
+				};
+
+				var FACEEMOTIONChart = document.getElementById('faceEmotionChart');
+				Plotly.newPlot(FACEEMOTIONChart, [Angry, Fearful, Excited, Bored, Sad, Happy], layout4);
+			}
 			
 			//Emotions in Text
 			if (this.textEmotionSelected == true) {
@@ -1014,6 +1165,13 @@ display: inline-block;
 margin-top: -3px; 
 }
 
+#faceEmotionChart {
+overflow: auto; 
+width: 80%; 
+display: inline-block;
+margin-top: -3px; 
+}
+
 #rawData {
 display: none; 
 margin: auto; 
@@ -1193,8 +1351,7 @@ video {
   margin-top: 0px;
 }
 
-#loading{
-margin-left: 10%; 
+#loading{ 
 height: 50px; 
 }
 
