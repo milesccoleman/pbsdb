@@ -35,9 +35,7 @@
 		<span v-if="!show3" id="volume-visualizer-wrapper"><button id="volume-visualizer"></button></span>
 		<ul v-if="!show3" id="output"></ul>
 		<span><button v-if="!show3" id="dataShowButton" v-on:click="unhideData">View Raw Data</button><button v-if="!show3" id="dataHideButton" v-on:click="hideData">Hide Raw Data</button></span>
-<div class="result-container">
-<div id="emotion">Emotion</div>
-</div>
+
 
 
 		<!--FEEDBACK SECTION-->
@@ -318,6 +316,7 @@ export default {
 						this.initialTime = Date.now();
 						this.grabTimeInterval = window.setInterval(this.grabTime, 1000)
 						this.startVolumeMeter()
+						document.getElementById("container").style.display = "inline";
 						console.log("app started")
 					} 
 					if (this.stop == true) {
@@ -390,7 +389,6 @@ video.addEventListener("playing", () => {
       const emotion = Object.keys(expressions).filter(
         item => expressions[item] === maxValue
       );
-      document.getElementById("emotion").innerText = `Emotion - ${emotion[0]}`;
       this.faceEmotionState = `Emotion - ${emotion[0]}`
       console.log(this.faceEmotionState)
       if (this.loading == false) {
@@ -1153,18 +1151,20 @@ background-color: #c300ff;
 #container {
 
   height: 200px;
-  margin-top: 0px; 
-  align-items: center;
-  width: 80%;
-  margin-top: 0px;
   margin-bottom: 0px;
+  display: none; 
+    margin-top: -100px; 
+
   
 }
 
 .video-container {
+
   position: relative;
   margin-top: 0px; 
   background-color: #222831; 
+  width: 80%;
+  display: inline-block; 
 
 }
 
@@ -1186,18 +1186,11 @@ canvas {
   color: white;
   text-transform: capitalize;
 }
-#age {
-  background: #1e94be;
-}
-#emotion {
-  background: #8a1025;
-}
-#gender {
-  background: #62d8a5;
-}
+
 video {
   width: 100%;
   margin-bottom: -150px; 
+  margin-top: 0px;
 }
 
 #loading{
