@@ -1,5 +1,6 @@
 <template>
   <div id="body" class="dashboard">
+  <p v-if="!loading" id="loadingContainer">Initializing <img  id="loading" src="https://media.giphy.com/media/Ky5F5Rhn1WRVZmvE5W/giphy.gif"><br><span id="initialMessage">(Make sure your webcam is facing you.)</span></p>
     <h1 id="mainTitle"> <img id="talking" alt="image of voice waves leaving someone's mouth. Attribution: Speak Icon, by Voysla, 'https://www.flaticon.com/free-icons/speak'" src="talking.png"> {{ msg }} </h1>
 		<p id="messageTwo">
 			{{ msg2 }} 
@@ -33,9 +34,11 @@
 		<span v-if="!show3" id="volume-visualizer-wrapper"><button id="volume-visualizer"></button></span>
 		<ul v-if="!show3" id="output"></ul>
 		<span><button v-if="!show3" id="dataShowButton" v-on:click="unhideData">View Raw Data</button><button v-if="!show3" id="dataHideButton" v-on:click="hideData">Hide Raw Data</button></span>
-<div id="container" class="container">
-<video id="video" height="500" width="500" autoplay></video>
-</div>
+<span class="container">
+    <span id="video-container" class="video-container">
+      <video id="video" autoplay width="500" height="500"></video>
+    </span>
+  </span>
 <div class="result-container">
 <div id="emotion">Emotion</div>
 <div id="gender">Gender</div>
@@ -92,6 +95,7 @@ export default {
 			show: true, 
 			show2: true, 
 			show3: true, 
+			loading: true,
 			show4: true,
 			showWPM: true,
 			showTEXTEMOTION: true, 
@@ -120,6 +124,8 @@ export default {
 			volumeValue: 0, 
 			volumeNumber: 0, 
 			showVolume: true, 
+			faceEmotionState: '', 
+			analyzeFaceInterval: ''
 		}
 	},
 	
@@ -337,14 +343,13 @@ export default {
 		
 		analyzeFace: function () {
 const video = document.querySelector("video");
-let predictedAges = [];
-
+this.loading = false
+const videoContainer = document.getElementById("video-container");
 Promise.all([
   faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
   faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
   faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
-  faceapi.nets.faceExpressionNet.loadFromUri("./models"),
-  faceapi.nets.ageGenderNet.loadFromUri("./models")
+  faceapi.nets.faceExpressionNet.loadFromUri("./models")
 ]).then(startVideo);
 
 function startVideo() {
@@ -360,48 +365,47 @@ navigator.mediaDevices.getUserMedia(constraints)
 video.addEventListener("playing", () => {
   console.log("playing called");
   const canvas = faceapi.createCanvasFromMedia(video);
-  let container = document.querySelector(".container");
-  container.append(canvas);
+  
+  canvas.willReadFrequently = true;
+  videoContainer.appendChild(canvas);
+
+//   let container = document.querySelector(".container");
+//   container.append(canvas);
 
   const displaySize = { width: video.width, height: video.height };
   faceapi.matchDimensions(canvas, displaySize);
 
-  setInterval(async () => {
+  this.analyzeFaceInterval = window.setInterval(async () => {
     const detections = await faceapi
       .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
       .withFaceLandmarks()
       .withFaceExpressions()
-      .withAgeAndGender();
 
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    console.log(resizedDetections);
+    //console.log(resizedDetections);
 
     canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 
+	const resizedResults = faceapi.resizeResults(detections, displaySize)
     faceapi.draw.drawDetections(canvas, resizedDetections);
-    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+    const minProbability = 0.05
+	faceapi.draw.drawFaceExpressions(canvas, resizedResults, minProbability)
     if (resizedDetections && Object.keys(resizedDetections).length > 0) {
-      const age = resizedDetections.age;
-      const interpolatedAge = interpolateAgePredictions(age);
-      const gender = resizedDetections.gender;
       const expressions = resizedDetections.expressions;
       const maxValue = Math.max(...Object.values(expressions));
       const emotion = Object.keys(expressions).filter(
         item => expressions[item] === maxValue
       );
-      document.getElementById("age").innerText = `Age - ${interpolatedAge}`;
-      document.getElementById("gender").innerText = `Gender - ${gender}`;
       document.getElementById("emotion").innerText = `Emotion - ${emotion[0]}`;
+      this.faceEmotionState = `Emotion - ${emotion[0]}`
+      console.log(this.faceEmotionState)
+      if (this.loading == false) {
+		this.loading = true
+      }
     }
-  }, 10);
+  }, 1000);
 });
 
-function interpolateAgePredictions(age) {
-  predictedAges = [age].concat(predictedAges).slice(0, 30);
-  const avgPredictedAge =
-    predictedAges.reduce((total, a) => total + a) / predictedAges.length;
-  return avgPredictedAge;
-}
 
 		},
 	
@@ -509,6 +513,7 @@ function interpolateAgePredictions(age) {
 			this.visualizeData()
 			this.initiateVoiceControl()
 			clearInterval(this.grabTimeInterval)
+			clearInterval(this.analyzeFaceInterval)
 		}, 
 	
 		reset: function () {
@@ -1151,19 +1156,23 @@ background-color: #c300ff;
    background-color: #c300ff;
    transition: width 100ms linear;
 }
-canvas {
-position: absolute; 
-z-index: 10;
-}
-#container {
-  width: 100%;
+.container {
   justify-content: center;
+  flex-direction: column;
   align-items: center;
-  
-top: 0;
-   bottom: 0;
-   left: 0;
-   
+  height: 100vh;
+  text-align: center;
+}
+
+.video-container {
+  position: relative;
+}
+
+canvas {
+  position: absolute;
+  left: 0;
+  top: 0px; 
+  background: rgba('black', 0.5)
 }
 .result-container {
   width: 100%;
@@ -1190,5 +1199,22 @@ top: 0;
 video {
   width: 100%;
 }
+
+#loading{
+margin-left: 10%; 
+height: 50px; 
+}
+
+#loadingContainer {
+color: #fdfd96; 
+margin-bottom: 150%; 
+font-size: 50px; 
+}
+
+#initialMessage {
+font-size: 20px;
+color: #c300ff; 
+}
+
 
 </style>
