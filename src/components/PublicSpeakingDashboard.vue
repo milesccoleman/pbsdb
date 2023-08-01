@@ -39,12 +39,14 @@
 		
 
 		<!--FEEDBACK SECTION-->
-		<footer v-if="show3" id="footer">
+		<footer id="footer">
 			<section id="version">Version 0.1 (Beta)<br>
 					<div id="bugs">
-					<section>If you find a bug please report it here: <a>URLToGoogleForm</a></section>
+					<section>If you find a bug please report it here: <a href="https://rowan.co1.qualtrics.com/jfe/form/SV_8AhIsft05UgIUqW">Bug/Error Report Form</a></section>
 					<br> Known Bugs and Limitations: <br>
 						<section>- Current version "skips" during voice recognition on mobile (but works correctly on desktop).</section>
+						<section>- App works on Google Chrome (other browsers are currently untested).</section>
+						<section>- User needs to speak for at least 20 seconds before meaningful results are produced.</section>
 					</div>
 			</section>
 		</footer>
