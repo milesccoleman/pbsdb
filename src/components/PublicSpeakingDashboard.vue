@@ -36,15 +36,26 @@
 		<ul v-if="!show3" id="output"></ul>
 		<span><button v-if="!show3" id="dataShowButton" v-on:click="unhideData">View Raw Data</button><button v-if="!show3" id="dataHideButton" v-on:click="hideData">Hide Raw Data</button></span>
 
-
+		
 
 		<!--FEEDBACK SECTION-->
-		
+		<footer v-if="show3" id="footer">
+			<section id="version">Version 0.1 (Beta)<br>
+					<div id="bugs">
+					<section>If you find a bug please report it here: <a>URLToGoogleForm</a></section>
+					<br> Known Bugs and Limitations: <br>
+						<section>- Current version "skips" during voice recognition on mobile (but works correctly on desktop).</section>
+					</div>
+			</section>
+		</footer>
 		<!--WPM-->
 		<span v-if="!showWPM" id="wpmChart"></span>
 		<span v-if="!showVolume" id="volumeChart"></span>
 		<span v-if="!showFaceEmotion" id="faceEmotionChart"></span>
 		<span v-if="!showTextEmotion" id="textEmotionChart"></span>
+		
+		
+		
 		<!--<p v-if="!showWPM" id="wpm">{{ wpm }} <br><b>Overall Average Words Per Minute</b></p><br>-->
   </div>
 </template>
@@ -118,14 +129,15 @@ export default {
 			volumeNumber: 0, 
 			showVolume: true, 
 			faceEmotionState: '', 
-			analyzeFaceInterval: '', 
-			faceAngry: '',
-			faceDisgusted: '', 
-			faceFearful: '', 
-			faceHappy: '', 
-			faceNeutral: '',
-			faceSad: '', 
-			faceSurprised: ''
+			analyzeFaceInterval: '',
+			analyzingFace: true,  
+			faceAngry: 0,
+			faceDisgusted: 0, 
+			faceFearful: 0, 
+			faceHappy: 0, 
+			faceNeutral: 0,
+			faceSad: 0, 
+			faceSurprised: 0 
 		}
 	},
 	
@@ -159,42 +171,42 @@ export default {
 						}
 			});
 
-		const audioContext = new AudioContext();
-		const audioSource = audioContext.createMediaStreamSource(audioStream);
-		const analyser = audioContext.createAnalyser();
-		analyser.fftSize = 512;
-		analyser.minDecibels = -127;
-		analyser.maxDecibels = 0;
-		analyser.smoothingTimeConstant = 0.4;
-		audioSource.connect(analyser);
-		const volumes = new Uint8Array(analyser.frequencyBinCount);
-		this.volumeCallback = () => {
-			analyser.getByteFrequencyData(volumes);
-			let volumeSum = 0;
-				for(const volume of volumes)
-					volumeSum += volume;
-					const averageVolume = volumeSum / volumes.length;
-					// Value range: 127 = analyser.maxDecibels - analyser.minDecibels;
-					volumeVisualizer.style.setProperty('--volume', (averageVolume * 100 / 127) + '%');
-					this.volumeNumber = averageVolume
-					this.showVolume = false
-		};
-		} catch(e) {
-			console.error('Failed to initialize volume visualizer, simulating instead...', e);
-			let lastVolume = 50;
-		this.volumeCallback = () => {
-			const volume = Math.min(Math.max(Math.random() * 100, 0.8 * lastVolume), 1.2 * lastVolume);
-			lastVolume = volume;
-			volumeVisualizer.style.setProperty('--volume', volume + '%');
-		};
-		}
-		// Use
+			const audioContext = new AudioContext();
+			const audioSource = audioContext.createMediaStreamSource(audioStream);
+			const analyser = audioContext.createAnalyser();
+			analyser.fftSize = 512;
+			analyser.minDecibels = -127;
+			analyser.maxDecibels = 0;
+			analyser.smoothingTimeConstant = 0.4;
+			audioSource.connect(analyser);
+			const volumes = new Uint8Array(analyser.frequencyBinCount);
+			this.volumeCallback = () => {
+				analyser.getByteFrequencyData(volumes);
+				let volumeSum = 0;
+					for(const volume of volumes)
+						volumeSum += volume;
+						const averageVolume = volumeSum / volumes.length;
+						// Value range: 127 = analyser.maxDecibels - analyser.minDecibels;
+						volumeVisualizer.style.setProperty('--volume', (averageVolume * 100 / 127) + '%');
+						this.volumeNumber = averageVolume
+						this.showVolume = false
+			};
+			} catch(e) {
+				console.error('Failed to initialize volume visualizer, simulating instead...', e);
+				let lastVolume = 50;
+			this.volumeCallback = () => {
+				const volume = Math.min(Math.max(Math.random() * 100, 0.8 * lastVolume), 1.2 * lastVolume);
+				lastVolume = volume;
+				volumeVisualizer.style.setProperty('--volume', volume + '%');
+			};
+			}
+			// Use
 
-		if(this.volumeCallback !== null && this.volumeInterval === null)
-			this.volumeInterval = setInterval(this.volumeCallback, 100);
+			if(this.volumeCallback !== null && this.volumeInterval === null)
+				this.volumeInterval = setInterval(this.volumeCallback, 100);
 
-		})();
-		},
+			})();
+			},
 		
 		setVolume: function () {
 			this.volumeValue = Math.round(this.volumeNumber)
@@ -325,8 +337,11 @@ export default {
 						this.grabTimeInterval = window.setInterval(this.grabTime, 1000)
 						this.startVolumeMeter()
 						document.getElementById("container").style.display = "inline";
-						console.log("app started")
 						this.showStop = false
+						this.visualizeData()
+						console.log("app started")
+						
+						// if (this.analyzingFace == false){this.analyzeFace()}
 					} 
 					if (this.stop == true) {
 						clearInterval(this.grabTimeInterval)
@@ -344,76 +359,76 @@ export default {
 		},
 		
 		analyzeFace: function () {
-const video = document.querySelector("video");
-this.loading = false
-const videoContainer = document.getElementById("video-container");
-Promise.all([
-  faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
-  faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
-  faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
-  faceapi.nets.faceExpressionNet.loadFromUri("./models")
-]).then(startVideo);
+			const video = document.querySelector("video");
+			this.loading = false
+			const videoContainer = document.getElementById("video-container");
+			
+			Promise.all([
+				faceapi.nets.tinyFaceDetector.loadFromUri("./models"),
+				faceapi.nets.faceLandmark68Net.loadFromUri("./models"),
+				faceapi.nets.faceRecognitionNet.loadFromUri("./models"),
+				faceapi.nets.faceExpressionNet.loadFromUri("./models")
+			]).then(startVideo);
 
-function startVideo() {
-  var constraints = { audio: false, video: true }; 
+			function startVideo() {
+			var constraints = { audio: false, video: true }; 
 
-navigator.mediaDevices.getUserMedia(constraints)
-.then(function(mediaStream) {
-  video.srcObject = mediaStream;
-})
-.catch(function(err) { console.log(err.name + ": " + err.message); });
-}
+			navigator.mediaDevices.getUserMedia(constraints)
+				.then(function(mediaStream) {
+				video.srcObject = mediaStream;
+			})
+				.catch(function(err) { console.log(err.name + ": " + err.message); });
+			}
 
-video.addEventListener("playing", () => {
-  console.log("Initializing face recognition");
-  const canvas = faceapi.createCanvasFromMedia(video);
-  
-  canvas.willReadFrequently = true;
-  videoContainer.appendChild(canvas);
+			video.addEventListener("playing", () => {
+				console.log("Initializing face recognition");
+				const canvas = faceapi.createCanvasFromMedia(video);
+				canvas.willReadFrequently = true;
+				videoContainer.appendChild(canvas);
 
-//   let container = document.querySelector(".container");
-//   container.append(canvas);
+				const displaySize = { width: video.width, height: video.height };
+				faceapi.matchDimensions(canvas, displaySize);
 
-  const displaySize = { width: video.width, height: video.height };
-  faceapi.matchDimensions(canvas, displaySize);
+				this.analyzeFaceInterval = window.setInterval(async () => {
+				const detections = await faceapi
+					.detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
+						.withFaceLandmarks()
+						.withFaceExpressions()
 
-  this.analyzeFaceInterval = window.setInterval(async () => {
-    const detections = await faceapi
-      .detectSingleFace(video, new faceapi.TinyFaceDetectorOptions())
-      .withFaceLandmarks()
-      .withFaceExpressions()
+				const resizedDetections = faceapi.resizeResults(detections, displaySize);
 
-    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    //console.log(resizedDetections);
+				canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
 
-    canvas.getContext("2d").clearRect(0, 0, canvas.width, canvas.height);
-
-	const resizedResults = faceapi.resizeResults(detections, displaySize)
-    faceapi.draw.drawDetections(canvas, resizedDetections);
-    const minProbability = 0.05
-	faceapi.draw.drawFaceExpressions(canvas, resizedResults, minProbability)
-    if (resizedDetections && Object.keys(resizedDetections).length > 0) {
-      const expressions = resizedDetections.expressions;
-      const maxValue = Math.max(...Object.values(expressions));
-      const emotion = Object.keys(expressions).filter(
-        item => expressions[item] === maxValue
-      );
-      this.faceEmotionState = '"' + `${emotion[0]}` + '"'
-	if (this.loading == false) {
-		this.loading = true
-      }
-    }
-    this.faceAngry = Math.round(detections.expressions.angry * 100)
-      this.faceDisgusted = Math.round(detections.expressions.disgusted * 100)
-      this.faceFearful = Math.round(detections.expressions.fearful * 100)
-      this.faceHappy = Math.round(detections.expressions.happy * 100)
-      this.faceNeutral = Math.round(detections.expressions.neutral * 100)
-      this.faceSad = Math.round(detections.expressions.sad * 100)
-      this.faceSurprised = Math.round(detections.expressions.surprised * 100)
-  }, 500);
-});
-
-
+				const resizedResults = faceapi.resizeResults(detections, displaySize)
+				faceapi.draw.drawDetections(canvas, resizedDetections);
+				
+				const minProbability = 0.05
+				faceapi.draw.drawFaceExpressions(canvas, resizedResults, minProbability)
+			
+				if (resizedDetections && Object.keys(resizedDetections).length > 0) {
+					const expressions = resizedDetections.expressions;
+					const maxValue = Math.max(...Object.values(expressions));
+					const emotion = Object.keys(expressions).filter(
+					item => expressions[item] === maxValue
+				);
+			
+				this.faceEmotionState = '"' + `${emotion[0]}` + '"'
+				
+				if (this.loading == false) {
+					this.loading = true
+				}
+			}
+				
+					this.faceAngry = Math.round(detections.expressions.angry * 100)
+					this.faceDisgusted = Math.round(detections.expressions.disgusted * 100)
+					this.faceFearful = Math.round(detections.expressions.fearful * 100)
+					this.faceHappy = Math.round(detections.expressions.happy * 100)
+					this.faceNeutral = Math.round(detections.expressions.neutral * 100)
+					this.faceSad = Math.round(detections.expressions.sad * 100)
+					this.faceSurprised = Math.round(detections.expressions.surprised * 100)
+				
+			}, 500);
+			});
 		},
 	
 		grabTime: function () {
@@ -516,7 +531,8 @@ video.addEventListener("playing", () => {
 			this.visualizeData()
 			this.initiateVoiceControl()
 			clearInterval(this.grabTimeInterval)
-			clearInterval(this.analyzeFaceInterval)
+			//clearInterval(this.analyzeFaceInterval)
+			//this.analyzingFace = false
 		}, 
 	
 		reset: function () {
@@ -548,11 +564,11 @@ video.addEventListener("playing", () => {
 			});
 		}, 
 		
-		constructJSON: function() {
-						this.currentDataObject = '{"time":' + '"' + this.workingTime + '"' + "," + '"wpm":' + '"' + this.wpm + '"' + "," + '"content":' + '"' + this.workingOutput + '"' + "," + '"Angry":' + this.anger + "," + '"Fear":' + this.fear + "," + '"Excited":' + this.excitement + "," + '"Bored":' + this.boredom + "," + '"Sad":' + this.sadness + "," + '"Happy":' + this.happiness + "," + '"volume":' + this.volumeValue + "," + '"faceAnger":' + this.faceAngry + "," + '"faceDisgust":' + this.faceDisgusted + "," + '"faceFear":' + this.faceFearful + "," + '"faceHappiness":' + this.faceHappy + "," + '"faceNeutral":' + this.faceNeutral + "," + '"faceSadness":' + this.faceSad + "," + '"faceSurprise":' + this.faceSurprised + "},"
-						var div = document.getElementById('rawData');
-						div.innerHTML += this.currentDataObject;
-						this.overallDataObject = document.getElementById("rawData").innerHTML
+		constructJSON: function() {		
+			this.currentDataObject = '{"time":' + '"' + this.workingTime + '"' + "," + '"wpm":' + '"' + this.wpm + '"' + "," + '"content":' + '"' + this.workingOutput + '"' + "," + '"Angry":' + this.anger + "," + '"Fear":' + this.fear + "," + '"Excited":' + this.excitement + "," + '"Bored":' + this.boredom + "," + '"Sad":' + this.sadness + "," + '"Happy":' + this.happiness + "," + '"volume":' + this.volumeValue + "," + '"faceAnger":' + this.faceAngry + "," + '"faceDisgust":' + this.faceDisgusted + "," + '"faceFear":' + this.faceFearful + "," + '"faceHappiness":' + this.faceHappy + "," + '"faceNeutral":' + this.faceNeutral + "," + '"faceSadness":' + this.faceSad + "," + '"faceSurprise":' + this.faceSurprised + "},"
+			var div = document.getElementById('rawData');
+			div.innerHTML += this.currentDataObject;
+			this.overallDataObject = document.getElementById("rawData").innerHTML
 		},  
 		
 		visualizeData: function () {
@@ -1366,5 +1382,17 @@ font-size: 20px;
 color: #c300ff; 
 }
 
+#footer {
+display: block; 
+  position: absolute;
+  bottom: 0;
+  height: 3rem;   
+  text-align: left;     
+      
+}
 
+#bugs {
+color: white; 
+font-size: 12px; 
+}
 </style>
