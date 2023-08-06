@@ -39,7 +39,16 @@
 		
 
 		<!--FEEDBACK SECTION-->
-		<footer id="footer">
+
+		<!--WPM-->
+		<span v-if="!showWPM" id="wpmChart"></span>
+		<span v-if="!showVolume" id="volumeChart"></span>
+		<span v-if="!showFaceEmotion" id="faceEmotionChart"></span>
+		<span v-if="!showTextEmotion" id="textEmotionChart"></span>
+		
+		
+		
+			<footer id="footer">
 			<section id="version">Version 0.1 (Beta)<br>
 					<div id="bugs">
 					<section>If you find a bug please report it here: <a href="https://rowan.co1.qualtrics.com/jfe/form/SV_8AhIsft05UgIUqW">Bug/Error Report Form</a></section>
@@ -49,16 +58,7 @@
 						<section>- User needs to speak for at least 20 seconds before meaningful results are produced.</section>
 					</div>
 			</section>
-		</footer>
-		<!--WPM-->
-		<span v-if="!showWPM" id="wpmChart"></span>
-		<span v-if="!showVolume" id="volumeChart"></span>
-		<span v-if="!showFaceEmotion" id="faceEmotionChart"></span>
-		<span v-if="!showTextEmotion" id="textEmotionChart"></span>
-		
-		
-		
-		<!--<p v-if="!showWPM" id="wpm">{{ wpm }} <br><b>Overall Average Words Per Minute</b></p><br>-->
+		</footer>	<!--<p v-if="!showWPM" id="wpm">{{ wpm }} <br><b>Overall Average Words Per Minute</b></p><br>-->
   </div>
 </template>
 
@@ -1385,11 +1385,12 @@ color: #c300ff;
 }
 
 #footer {
-display: block; 
-  position: absolute;
+display: flex; 
+  position: float;
   bottom: 0;
+  margin-top: 27%;
   height: 3rem;   
-  text-align: left;     
+  text-align: left; 
       
 }
 
