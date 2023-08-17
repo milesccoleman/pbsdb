@@ -298,6 +298,9 @@ export default {
 		//start listening for words and making a transcript of detected words
 			console.log('Voice recognition initiated')
 			window.SpeechRecognition = window.webkitSpeechRecognition || window.SpeechRecognition;
+			window.SpeechGrammarList = window.SpeechGrammarList || window.webkitSpeechGrammarList; //
+			window.SpeechRecognitionEvent = window.SpeechRecognitionEvent || window.webkitSpeechRecognitionEvent; //
+			
 			let finalTranscript = '';
 			let recognition = new window.SpeechRecognition();
 			recognition.interimResults = true; 
@@ -318,7 +321,6 @@ export default {
 						elem.scrollTop = elem.scrollHeight;
 						console.log("Detected speech:" + this.workingOutput)
 						this.renderData()
-						
 					}
 				} else {
 				interimTranscript += transcript;
